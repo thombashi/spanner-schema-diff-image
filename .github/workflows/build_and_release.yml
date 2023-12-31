@@ -1,0 +1,84 @@
+name: Build and publish Docker images
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref of the cloudspannerecosystem/spanner-schema-diff-tool repository. The latest commit hash is used if the value is 'latest'"
+        required: true
+        default: "latest"
+      push:
+        type: boolean
+        description: "If checked, push the built images to the registry"
+        default: false
+
+jobs:
+  build-docker-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: "ghcr.io"
+      PLATFORMS: "linux/amd64,linux/arm64"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: "cloudspannerecosystem/spanner-schema-diff-tool"
+          path: spanner-schema-diff-tool
+
+      - name: Extract hash
+        id: extract-hash
+        env:
+          UPSTREAM_REF: ${{ github.event.inputs.ref }}
+        run: |
+          set -x
+
+          if [ "${UPSTREAM_REF}" = "" ]; then
+            UPSTREAM_REF="latest"
+          fi
+
+          if [ "${UPSTREAM_REF}" != "latest" ]; then
+            echo "TARGET_REF=${UPSTREAM_REF}" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          cd spanner-schema-diff-tool
+          SHA=$(git rev-parse --short HEAD)
+          echo "TARGET_REF=${SHA}" >> $GITHUB_ENV
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Package Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login "$REGISTRY" -u ${{ github.actor }} --password-stdin
+
+      - name: Build and push Docker images
+        working-directory: docker
+        env:
+          ES_FAKER_VERSION: ${{ steps.extract-version.outputs.version }}
+        run: |
+          set -x
+
+          IMAGE_TAG=${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/spanner-ddl-diff:${TARGET_REF}
+          PUSH_OPTION=
+
+          if [ "${{ github.event.inputs.push }}" = "true" ]; then
+            PUSH_OPTION=--push
+          fi
+
+          docker buildx build \
+            -t "$IMAGE_TAG" \
+            --platform=$PLATFORMS \
+            --build-arg REF=$TARGET_REF \
+            $PUSH_OPTION .

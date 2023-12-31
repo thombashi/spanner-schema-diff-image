@@ -1,5 +1,7 @@
 # spanner-schema-diff-image
 
+[![Build and publish Docker images](https://github.com/thombashi/spanner-schema-diff-image/actions/workflows/build_and_release.yml/badge.svg)](https://github.com/thombashi/spanner-schema-diff-image/actions/workflows/build_and_release.yml)
+
 Docker images for [spanner-schema-diff-tool](https://github.com/cloudspannerecosystem/spanner-schema-diff-tool)
 
 ## Usage

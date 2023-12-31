@@ -5,24 +5,26 @@ Docker images for [spanner-schema-diff-tool](https://github.com/cloudspannerecos
 ## Usage
 
 ```
-docker pull ghcr.io/thombashi/spanner-ddl-diff
+docker pull ghcr.io/thombashi/spanner-ddl-diff:2e77d45
 ```
 
+The image tag represents the short commit hash of the [spanner-schema-diff-tool](https://github.com/cloudspannerecosystem/spanner-schema-diff-tool) repository.
+
 ```
-docker run --rm \
+$ docker run --rm \
     -u $(id -u):$(id -g) \
     --mount type=bind,source="$(pwd)"/examples,target=/work \
-    thombashi/spanner-ddl-diff:$TAG \
+    ghcr.io/thombashi/spanner-ddl-diff:$TAG \
     --allowDropStatements \
     --allowRecreateConstraints \
     --allowRecreateIndexes \
     --originalDdlFile /work/org.ddl \
     --newDdlFile /work/new.ddl \
     --outputDdlFile /work/diff.ddl
+$ cat examples/diff.ddl
 ```
 
 ```sql
-$ cat examples/diff.ddl
 DROP INDEX index1;
 
 ALTER TABLE test1 DROP COLUMN col6;
